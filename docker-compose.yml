@@ -5,11 +5,13 @@ services:
       - '5000:5000'
     environment:
       - NODE_ENV=development
-      - DATABASE_HOST=localhost
-      - DATABASE_PORT=5432
-      - DATABASE_USERNAME=postgres
-      - DATABASE_PASSWORD=pawlie
-      - DATABASE_NAME=pawlie
+      - DATABASE_HOST=adb.us-ashburn-1.oraclecloud.com
+      - DATABASE_PORT=1522
+      - DATABASE_USERNAME=admin
+      - DATABASE_PASSWORD=WGQUx~g-33$03222017,LXgM?Sah8
+      - DATABASE_NAME=pawliedb_high
+      - DATABASE_SSL=true
+      - DATABASE_SSL_REJECT_UNAUTHORIZED=false
     depends_on:
       - redis
     volumes:
@@ -24,6 +26,7 @@ services:
       - '6379:6379'
     volumes:
       - redis_data:/data
+    command: redis-server --requirepass yourstrongpassword  # Add password
     networks:
       - pawlie-network
 
@@ -31,6 +34,14 @@ services:
     image: adminer:latest
     ports:
       - '8080:8080'
+    environment:
+      - ADMINER_DESIGN=nette
+      - ADMINER_PLUGINS=login-servers
+      - ADMINER_SERVER=adb.us-ashburn-1.oraclecloud.com
+      - ADMINER_PORT=1522
+      - ADMINER_DATABASE=pawliedb_high
+      - ADMINER_USERNAME=admin
+      - ADMINER_PASSWORD=WGQUx~g-33$03222017,LXgM?Sah8
     networks:
       - pawlie-network
 
