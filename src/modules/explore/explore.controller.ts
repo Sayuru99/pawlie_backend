@@ -23,8 +23,8 @@ export class ExploreController {
   @Get('trending')
   @ApiOperation({ summary: 'Get trending posts' })
   @ApiResponse({ status: 200, description: 'List of trending posts' })
-  async getTrending(@Query() pagination: PaginationDto) {
-    return this.exploreService.getTrendingPosts(pagination);
+  async getTrending(@CurrentUser() user: User, @Query() pagination: PaginationDto) {
+    return this.exploreService.getTrendingPosts(user.id, pagination);
   }
 
   @Get('recommendations')

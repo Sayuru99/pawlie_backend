@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, In } from 'typeorm';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { Post } from './entities/post.entity';
@@ -63,7 +63,7 @@ export class PostService {
     });
   }
 
-  async findOne(id: string): Promise<Post> {
+  async findOne(id: string, userId?: string): Promise<Post> {
     const post = await this.postRepository.findOne({
       where: { id },
       relations: ['user', 'pet', 'postHashtags', 'postHashtags.hashtag'],
@@ -73,14 +73,16 @@ export class PostService {
       throw new NotFoundException('Post not found');
     }
     
-    // Increment view count
-    await this.analyticsService.incrementViews(id);
+    // Increment view count if a user is viewing it
+    if (userId) {
+      await this.analyticsService.incrementViews(id, userId);
+    }
 
     return post;
   }
 
   async sponsorPost(postId: string, userId: string): Promise<Post> {
-    const post = await this.findOne(postId);
+    const post = await this.findOne(postId, userId);
 
     if (post.user_id !== userId) {
       throw new ForbiddenException('You can only sponsor your own posts.');
@@ -95,8 +97,13 @@ export class PostService {
     return this.postRepository.save(post);
   }
 
-  async update(id: string, updatePostDto: UpdatePostDto): Promise<Post> {
-    const post = await this.findOne(id);
+  async update(id: string, updatePostDto: UpdatePostDto, userId: string): Promise<Post> {
+    const post = await this.findOne(id, userId);
+
+    if (post.user_id !== userId) {
+      throw new ForbiddenException('You can only update your own posts.');
+    }
+
     const originalContent = post.content;
 
     Object.assign(post, updatePostDto);
@@ -109,10 +116,11 @@ export class PostService {
     return updatedPost;
   }
 
-  async remove(id: string): Promise<void> {
-    const post = await this.findOne(id);
-    if (!post) {
-      throw new NotFoundException('Post not found');
+  async remove(id: string, userId: string): Promise<void> {
+    const post = await this.findOne(id, userId);
+
+    if (post.user_id !== userId) {
+      throw new ForbiddenException('You can only delete your own posts.');
     }
 
     // Decrement post counts for associated hashtags
@@ -166,7 +174,7 @@ export class PostService {
   }
 
   async toggleLike(postId: string, userId: string): Promise<{ liked: boolean; likes_count: number }> {
-    const post = await this.findOne(postId);
+    const post = await this.findOne(postId, userId);
     
     // In a real implementation, you'd have a separate likes table
     // For now, we'll just increment/decrement the counter

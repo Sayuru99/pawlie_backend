@@ -54,8 +54,8 @@ export class PostController {
   @ApiOperation({ summary: 'Get a specific post by ID' })
   @ApiResponse({ status: 200, description: 'Post found', type: PostEntity })
   @ApiResponse({ status: 404, description: 'Post not found' })
-  async findOne(@Param('id') id: string): Promise<PostEntity> {
-    return this.postService.findOne(id);
+  async findOne(@Param('id') id: string, @CurrentUser() user: User): Promise<PostEntity> {
+    return this.postService.findOne(id, user.id);
   }
 
   @Post(':id/sponsor')
@@ -76,22 +76,14 @@ export class PostController {
     @Body() updatePostDto: UpdatePostDto,
     @CurrentUser() user: User,
   ): Promise<PostEntity> {
-    const post = await this.postService.findOne(id);
-    if (post.user_id !== user.id) {
-      throw new ForbiddenException('You can only update your own posts');
-    }
-    return this.postService.update(id, updatePostDto);
+    return this.postService.update(id, updatePostDto, user.id);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a post' })
   @ApiResponse({ status: 200, description: 'Post deleted successfully' })
   async remove(@Param('id') id: string, @CurrentUser() user: User): Promise<{ message: string }> {
-    const post = await this.postService.findOne(id);
-    if (post.user_id !== user.id) {
-      throw new ForbiddenException('You can only delete your own posts');
-    }
-    await this.postService.remove(id);
+    await this.postService.remove(id, user.id);
     return { message: 'Post deleted successfully' };
   }
 

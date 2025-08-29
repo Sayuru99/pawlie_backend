@@ -31,7 +31,7 @@ export class LikeService {
       // Unlike
       await this.likeRepository.remove(existingLike);
       await this.postRepository.decrement({ id: postId }, 'likes_count', 1);
-      await this.analyticsService.decrementLikes(postId);
+      await this.analyticsService.decrementLikes(postId, userId);
       return { message: 'Post unliked successfully', liked: false };
     } else {
       // Like
@@ -41,7 +41,7 @@ export class LikeService {
       });
       await this.likeRepository.save(like);
       await this.postRepository.increment({ id: postId }, 'likes_count', 1);
-      await this.analyticsService.incrementLikes(postId);
+      await this.analyticsService.incrementLikes(postId, userId);
 
       // Send notification to post owner
       if (post.user_id !== userId) {

@@ -148,6 +148,34 @@ export class AnalyticsService {
   }
 
   /**
+   * @deprecated Use logEvent({ type: AnalyticsEventType.LIKE_POST, ... }) instead.
+   */
+  async incrementLikes(postId: string, userId: string): Promise<void> {
+    await this.logEvent({ type: AnalyticsEventType.LIKE_POST, entityId: postId }, userId);
+  }
+
+  /**
+   * @deprecated Use logEvent({ type: AnalyticsEventType.UNLIKE_POST, ... }) instead.
+   */
+  async decrementLikes(postId: string, userId: string): Promise<void> {
+    await this.logEvent({ type: AnalyticsEventType.UNLIKE_POST, entityId: postId }, userId);
+  }
+
+  /**
+   * @deprecated Use logEvent({ type: AnalyticsEventType.COMMENT_POST, ... }) instead.
+   */
+  async incrementComments(postId: string, userId: string): Promise<void> {
+    await this.logEvent({ type: AnalyticsEventType.COMMENT_POST, entityId: postId }, userId);
+  }
+
+  /**
+   * @deprecated Use logEvent({ type: AnalyticsEventType.DELETE_COMMENT, ... }) instead.
+   */
+  async decrementComments(postId: string, userId: string): Promise<void> {
+    await this.logEvent({ type: AnalyticsEventType.DELETE_COMMENT, entityId: postId }, userId);
+  }
+
+  /**
    * @deprecated This method is for demonstration. The logic should be handled by the PostService.
    */
   async findByPostId(postId: string): Promise<PostAnalytic> {

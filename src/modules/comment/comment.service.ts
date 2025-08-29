@@ -36,7 +36,7 @@ export class CommentService {
 
     // Increment post comment count and analytics
     await this.postRepository.increment({ id: createCommentDto.post_id }, 'comments_count', 1);
-    await this.analyticsService.incrementComments(createCommentDto.post_id);
+    await this.analyticsService.incrementComments(createCommentDto.post_id, userId);
 
     // Send notification to post owner
     if (post.user_id !== userId) {
@@ -94,7 +94,7 @@ export class CommentService {
     
     // Decrement post comment count and analytics
     await this.postRepository.decrement({ id: comment.post_id }, 'comments_count', 1);
-    await this.analyticsService.decrementComments(comment.post_id);
+    await this.analyticsService.decrementComments(comment.post_id, comment.user_id);
     
     await this.commentRepository.remove(comment);
   }
