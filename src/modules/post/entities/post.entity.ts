@@ -14,6 +14,7 @@ import { User } from '@/modules/user/entities/user.entity';
 import { Pet } from '@/modules/pet/entities/pet.entity';
 import { Like } from '../../../modules/like/entities/like.entity';
 import { Comment } from '../../../modules/comment/entities/comment.entity';
+import { PostHashtag } from './post-hashtag.entity';
 
 @Entity('posts')
 export class Post {
@@ -41,6 +42,14 @@ export class Post {
   @Column({ type: 'integer', default: 0 })
   comments_count: number;
 
+  @ApiProperty({ description: 'Is the post sponsored?' })
+  @Column({ type: 'boolean', default: false })
+  is_sponsored: boolean;
+
+  @ApiProperty({ description: 'Sponsorship end date', required: false })
+  @Column({ type: 'timestamp', nullable: true })
+  sponsorship_end_date?: Date;
+
   @ApiProperty({ description: 'User ID' })
   @Column({ type: 'uuid' })
   user_id: string;
@@ -66,6 +75,9 @@ export class Post {
   @ApiProperty({ description: 'Post comments', type: () => [Comment] })
   @OneToMany(() => Comment, comment => comment.post)
   comments: Comment[];
+
+  @OneToMany(() => PostHashtag, postHashtag => postHashtag.post)
+  postHashtags: PostHashtag[];
 
   @ApiProperty({ description: 'Creation date' })
   @CreateDateColumn()

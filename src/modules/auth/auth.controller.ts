@@ -20,6 +20,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { AuthToken } from '../../common/decorators/auth-token.decorator';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -106,8 +107,11 @@ async login(@Request() req, @Body() loginDto: LoginDto): Promise<AuthResponseDto
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout user' })
   @ApiResponse({ status: 200, description: 'Logout successful' })
-  async logout(@Request() req): Promise<{ message: string }> {
-    return this.authService.logout(req.user.id);
+  async logout(
+    @Request() req,
+    @AuthToken() token: string,
+  ): Promise<{ message: string }> {
+    return this.authService.logout(req.user.id, token);
   }
 
   @UseGuards(JwtAuthGuard)

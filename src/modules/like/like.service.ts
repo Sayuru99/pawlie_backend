@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Like } from './entities/like.entity';
 import { Post } from '../post/entities/post.entity';
 import { NotificationService } from '../notification/notification.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class LikeService {
@@ -13,6 +14,7 @@ export class LikeService {
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
     private readonly notificationService: NotificationService,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async toggleLike(postId: string, userId: string): Promise<{ message: string; liked: boolean }> {
@@ -29,6 +31,7 @@ export class LikeService {
       // Unlike
       await this.likeRepository.remove(existingLike);
       await this.postRepository.decrement({ id: postId }, 'likes_count', 1);
+      await this.analyticsService.decrementLikes(postId);
       return { message: 'Post unliked successfully', liked: false };
     } else {
       // Like
@@ -38,6 +41,7 @@ export class LikeService {
       });
       await this.likeRepository.save(like);
       await this.postRepository.increment({ id: postId }, 'likes_count', 1);
+      await this.analyticsService.incrementLikes(postId);
 
       // Send notification to post owner
       if (post.user_id !== userId) {

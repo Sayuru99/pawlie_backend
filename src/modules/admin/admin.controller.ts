@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
@@ -25,7 +26,7 @@ import { UserType } from '../../common/enums/user-type.enum';
 @ApiTags('Admin')
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserType.PROFESSIONAL) // Assuming admins are professional users
+@Roles(UserType.ADMIN)
 @ApiBearerAuth()
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
@@ -61,8 +62,21 @@ export class AdminController {
   async unbanUser(
     @Param('id') userId: string,
     @CurrentUser() admin: User,
-  ): Promise<{ message: string }> {
+  ): Promise<{ message:string }> {
     return this.adminService.unbanUser(userId, admin.id);
+  }
+
+  @Post('users/:id/verify')
+  @ApiOperation({ summary: 'Set user verification status' })
+  @ApiResponse({ status: 200, description: 'User verification status updated', type: User })
+  async verifyUser(
+    @Param('id') userId: string,
+    @Body('is_verified') isVerified: boolean,
+  ): Promise<User> {
+    if (typeof isVerified !== 'boolean') {
+      throw new BadRequestException('is_verified must be a boolean');
+    }
+    return this.adminService.verifyUser(userId, isVerified);
   }
 
   @Delete('posts/:id')
@@ -75,11 +89,34 @@ export class AdminController {
     return this.adminService.deletePost(postId, admin.id);
   }
 
+  @Delete('stories/:id')
+  @ApiOperation({ summary: 'Delete a story (Admin action)' })
+  @ApiResponse({ status: 200, description: 'Story deleted successfully' })
+  async deleteStory(
+    @Param('id') storyId: string,
+    @CurrentUser() admin: User,
+  ): Promise<{ message: string }> {
+    return this.adminService.deleteStory(storyId, admin.id);
+  }
+
+  @Delete('comments/:id')
+  @ApiOperation({ summary: 'Delete a comment (Admin action)' })
+  @ApiResponse({ status: 200, description: 'Comment deleted successfully' })
+  async deleteComment(
+    @Param('id') commentId: string,
+    @CurrentUser() admin: User,
+  ): Promise<{ message: string }> {
+    return this.adminService.deleteComment(commentId, admin.id);
+  }
+
   @Get('reports')
   @ApiOperation({ summary: 'Get all reports' })
   @ApiResponse({ status: 200, description: 'List of reports' })
-  async getReports(@Query() pagination: PaginationDto) {
-    return this.adminService.getReports(pagination);
+  async getReports(
+    @Query() pagination: PaginationDto,
+    @Query('status') status?: string,
+  ) {
+    return this.adminService.getReports(pagination, status);
   }
 
   @Patch('reports/:id')
@@ -102,5 +139,26 @@ export class AdminController {
     @CurrentUser() admin: User,
   ): Promise<{ message: string }> {
     return this.adminService.notifyUser(userId, message, admin.id);
+  }
+
+  @Get('posts')
+  @ApiOperation({ summary: 'Get all posts with pagination (Admin)' })
+  @ApiResponse({ status: 200, description: 'List of all posts' })
+  async getAllPosts(@Query() pagination: PaginationDto) {
+    return this.adminService.getAllPosts(pagination);
+  }
+
+  @Get('stories')
+  @ApiOperation({ summary: 'Get all stories with pagination (Admin)' })
+  @ApiResponse({ status: 200, description: 'List of all stories' })
+  async getAllStories(@Query() pagination: PaginationDto) {
+    return this.adminService.getAllStories(pagination);
+  }
+
+  @Get('comments')
+  @ApiOperation({ summary: 'Get all comments with pagination (Admin)' })
+  @ApiResponse({ status: 200, description: 'List of all comments' })
+  async getAllComments(@Query() pagination: PaginationDto) {
+    return this.adminService.getAllComments(pagination);
   }
 }

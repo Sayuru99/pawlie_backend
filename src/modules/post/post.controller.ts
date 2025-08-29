@@ -58,6 +58,16 @@ export class PostController {
     return this.postService.findOne(id);
   }
 
+  @Post(':id/sponsor')
+  @ApiOperation({ summary: 'Sponsor a post' })
+  @ApiResponse({ status: 200, description: 'Post sponsored successfully', type: PostEntity })
+  async sponsorPost(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ): Promise<PostEntity> {
+    return this.postService.sponsorPost(id, user.id);
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update a post' })
   @ApiResponse({ status: 200, description: 'Post updated successfully', type: PostEntity })

@@ -12,10 +12,11 @@ import { Post } from '../post/entities/post.entity';
 import { Pet } from '../pet/entities/pet.entity';
 import { Story } from '../story/entities/story.entity';
 import { Report } from '../report/entities/report.entity';
+import { Comment } from '../comment/entities/comment.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Admin, User, Post, Pet, Story, Report]),
+    TypeOrmModule.forFeature([Admin, User, Post, Pet, Story, Report, Comment]),
     UserModule,
     PostModule,
     ReportModule,

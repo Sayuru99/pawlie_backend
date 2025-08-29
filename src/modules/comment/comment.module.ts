@@ -6,12 +6,14 @@ import { Comment } from './entities/comment.entity';
 import { Post } from '../post/entities/post.entity';
 import { PostModule } from '../post/post.module';
 import { NotificationModule } from '../notification/notification.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Comment, Post]),
     PostModule,
     NotificationModule,
+    AnalyticsModule,
   ],
   controllers: [CommentController],
   providers: [CommentService],

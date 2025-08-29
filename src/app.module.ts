@@ -26,11 +26,18 @@ import { LikeModule } from './modules/like/like.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { EmailModule } from './modules/email/email.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { HashtagModule } from './modules/hashtag/hashtag.module';
+import { SearchModule } from './modules/search/search.module';
 
 
 import { DatabaseModule } from './database/database.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { JwtBlocklistGuard } from './common/guards/jwt-blocklist.guard';
 
 @Module({
   imports: [
@@ -91,8 +98,22 @@ CacheModule.registerAsync({
     CommentModule,
     EmailModule,
     StorageModule,
+    AnalyticsModule,
+    ChatModule,
+    HashtagModule,
+    SearchModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtBlocklistGuard,
+    },
+  ],
 })
 export class AppModule {}

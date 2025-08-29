@@ -6,6 +6,7 @@ import { UpdateCommentDto } from './dto/update-comment.dto';
 import { Comment } from './entities/comment.entity';
 import { Post } from '../post/entities/post.entity';
 import { NotificationService } from '../notification/notification.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
 
@@ -17,6 +18,7 @@ export class CommentService {
     @InjectRepository(Post)
     private readonly postRepository: Repository<Post>,
     private readonly notificationService: NotificationService,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async create(createCommentDto: CreateCommentDto, userId: string): Promise<Comment> {
@@ -32,8 +34,9 @@ export class CommentService {
 
     const savedComment = await this.commentRepository.save(comment);
 
-    // Increment post comment count
+    // Increment post comment count and analytics
     await this.postRepository.increment({ id: createCommentDto.post_id }, 'comments_count', 1);
+    await this.analyticsService.incrementComments(createCommentDto.post_id);
 
     // Send notification to post owner
     if (post.user_id !== userId) {
@@ -89,8 +92,9 @@ export class CommentService {
   async remove(id: string): Promise<void> {
     const comment = await this.findOne(id);
     
-    // Decrement post comment count
+    // Decrement post comment count and analytics
     await this.postRepository.decrement({ id: comment.post_id }, 'comments_count', 1);
+    await this.analyticsService.decrementComments(comment.post_id);
     
     await this.commentRepository.remove(comment);
   }

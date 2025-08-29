@@ -13,6 +13,7 @@ import { Visibility } from '../../../common/enums/visibility.enum';
 import { Pet } from '../../pet/entities/pet.entity';
 import { Post } from '../../post/entities/post.entity';
 import { Story } from '../../story/entities/story.entity';
+import { UserFollow } from './user-follow.entity';
 
 @Entity('users')
 export class User {
@@ -45,6 +46,9 @@ export class User {
 
   @Column({ type: 'varchar', length: 255, nullable: true, select: false })
   password?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true, select: false })
+  current_hashed_refresh_token?: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true, select: false })
   reset_token?: string;
@@ -143,13 +147,19 @@ export class User {
     event_rsvp: boolean;
   };
 
-  @ApiProperty({ description: 'List of follower IDs' })
-  @Column({ type: 'uuid', array: true, default: [] })
-  followers: string[];
+  @ApiProperty({ description: 'Number of followers' })
+  @Column({ type: 'integer', default: 0 })
+  followers_count: number;
 
-  @ApiProperty({ description: 'List of following IDs' })
-  @Column({ type: 'uuid', array: true, default: [] })
-  followings: string[];
+  @ApiProperty({ description: 'Number of followings' })
+  @Column({ type: 'integer', default: 0 })
+  followings_count: number;
+
+  @OneToMany(() => UserFollow, userFollow => userFollow.followee)
+  followers: UserFollow[];
+
+  @OneToMany(() => UserFollow, userFollow => userFollow.follower)
+  followings: UserFollow[];
 
   @ApiProperty({ description: 'List of blocked user IDs' })
   @Column({ type: 'uuid', array: true, default: [] })

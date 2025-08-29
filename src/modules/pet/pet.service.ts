@@ -66,4 +66,16 @@ export class PetService {
     pet.profile_picture = imageUrl;
     return this.petRepository.save(pet);
   }
+
+  async findAllExcept(ownerId: string, excludedPetIds: string[]): Promise<Pet[]> {
+    const query = this.petRepository.createQueryBuilder('pet')
+      .where('pet.owner_id != :ownerId', { ownerId });
+
+    if (excludedPetIds && excludedPetIds.length > 0) {
+      query.andWhere('pet.id NOT IN (:...excludedPetIds)', { excludedPetIds });
+    }
+
+    // Add some default ordering and pagination for production readiness
+    return query.orderBy('pet.created_at', 'DESC').take(20).getMany();
+  }
 }

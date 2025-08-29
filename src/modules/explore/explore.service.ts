@@ -6,6 +6,8 @@ import { Cache } from 'cache-manager';
 import { Post } from '../post/entities/post.entity';
 import { Pet } from '../pet/entities/pet.entity';
 import { User } from '../user/entities/user.entity';
+import { Like } from '../like/entities/like.entity';
+import { Comment } from '../comment/entities/comment.entity';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { Visibility } from '../../common/enums/visibility.enum';
 import { UserType } from '../../common/enums/user-type.enum';
@@ -19,20 +21,25 @@ export class ExploreService {
     private readonly petRepository: Repository<Pet>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Like)
+    private readonly likeRepository: Repository<Like>,
+    @InjectRepository(Comment)
+    private readonly commentRepository: Repository<Comment>,
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
   ) {}
 
   async getExploreContent(userId: string, pagination: PaginationDto) {
-    const cacheKey = `explore:${userId}:${pagination.page}:${pagination.limit}`;
+    // Caching is disabled for now to ensure personalization is fresh
+    // const cacheKey = `explore:${userId}:${pagination.page}:${pagination.limit}`;
     
-    const cachedContent = await this.cacheManager.get(cacheKey);
-    if (cachedContent) {
-      return cachedContent;
-    }
+    // const cachedContent = await this.cacheManager.get(cacheKey);
+    // if (cachedContent) {
+    //   return cachedContent;
+    // }
 
     const [trendingPosts, recommendedPets, recommendedUsers] = await Promise.all([
-      this.getTrendingPosts(pagination),
+      this.getTrendingPosts(userId, pagination),
       this.getRecommendedPets(userId, { page: 1, limit: 10 }),
       this.getRecommendedUsers(userId, { page: 1, limit: 10 }),
     ]);
@@ -47,20 +54,38 @@ export class ExploreService {
     return content;
   }
 
-  async getTrendingPosts(pagination: PaginationDto): Promise<Post[]> {
+  async getTrendingPosts(userId: string, pagination: PaginationDto): Promise<Post[]> {
     const { page, limit } = pagination;
     const skip = (page - 1) * limit;
     
+    const user = await this.userRepository.findOne({ where: { id: userId }, select: ['blocked_users'] });
+    const blockedUserIds = user?.blocked_users || [];
+
+    // Find posts the user has already interacted with
+    const userLikes = await this.likeRepository.find({ where: { user_id: userId }, select: ['post_id'] });
+    const userComments = await this.commentRepository.find({ where: { user_id: userId }, select: ['post_id'] });
+    const interactedPostIds = [...new Set([...userLikes.map(l => l.post_id), ...userComments.map(c => c.post_id)])];
+
     // Get posts from the last 7 days with high engagement
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    return this.postRepository
+    const query = this.postRepository
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
       .leftJoinAndSelect('post.pet', 'pet')
       .where('post.created_at > :sevenDaysAgo', { sevenDaysAgo })
-      .andWhere('post.visibility = :visibility', { visibility: Visibility.PUBLIC })
+      .andWhere('post.visibility = :visibility', { visibility: Visibility.PUBLIC });
+
+    if (blockedUserIds.length > 0) {
+      query.andWhere('post.user_id NOT IN (:...blockedUserIds)', { blockedUserIds });
+    }
+
+    if (interactedPostIds.length > 0) {
+      query.andWhere('post.id NOT IN (:...interactedPostIds)', { interactedPostIds });
+    }
+
+    return query
       .orderBy('(post.likes_count * 0.6 + post.comments_count * 0.4)', 'DESC')
       .skip(skip)
       .take(limit)

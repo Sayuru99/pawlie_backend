@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
 import { User } from './entities/user.entity';
+import { UserFollow } from './entities/user-follow.entity';
 import { StorageService } from '../storage/storage.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -25,6 +26,8 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(UserFollow)
+    private readonly userFollowRepository: Repository<UserFollow>,
     private readonly storageService: StorageService,
     private readonly emailService: EmailService,
   ) {}
@@ -108,79 +111,64 @@ export class UserService {
       throw new BadRequestException('Cannot follow yourself');
     }
 
-    const [follower, followee] = await Promise.all([
+    const existingFollow = await this.userFollowRepository.findOne({
+      where: { follower_id: followerId, followee_id: followeeId },
+    });
+
+    if (existingFollow) {
+      throw new ConflictException('Already following this user');
+    }
+
+    // Ensure both users exist before attempting to follow
+    await Promise.all([
       this.getUserById(followerId),
       this.getUserById(followeeId),
     ]);
 
-    if (!follower.followings) {
-      follower.followings = [];
-    }
-    if (!followee.followers) {
-      followee.followers = [];
-    }
+    const newFollow = this.userFollowRepository.create({
+      follower_id: followerId,
+      followee_id: followeeId,
+    });
+    await this.userFollowRepository.save(newFollow);
 
-    if (follower.followings.includes(followeeId)) {
-      throw new ConflictException('Already following this user');
-    }
-
-    follower.followings.push(followeeId);
-    followee.followers.push(followerId);
-
-    await Promise.all([
-      this.userRepository.save(follower),
-      this.userRepository.save(followee),
-    ]);
+    // Atomically increment the counters
+    await this.userRepository.increment({ id: followerId }, 'followings_count', 1);
+    await this.userRepository.increment({ id: followeeId }, 'followers_count', 1);
 
     return { message: 'User followed successfully' };
   }
 
   async unfollowUser(followerId: string, followeeId: string): Promise<{ message: string }> {
-    const [follower, followee] = await Promise.all([
-      this.getUserById(followerId),
-      this.getUserById(followeeId),
-    ]);
+    const follow = await this.userFollowRepository.findOne({
+      where: { follower_id: followerId, followee_id: followeeId },
+    });
 
-    if (!follower.followings?.includes(followeeId)) {
+    if (!follow) {
       throw new BadRequestException('Not following this user');
     }
 
-    follower.followings = follower.followings.filter(id => id !== followeeId);
-    followee.followers = followee.followers?.filter(id => id !== followerId) || [];
+    await this.userFollowRepository.remove(follow);
 
-    await Promise.all([
-      this.userRepository.save(follower),
-      this.userRepository.save(followee),
-    ]);
+    // Atomically decrement the counters
+    await this.userRepository.decrement({ id: followerId }, 'followings_count', 1);
+    await this.userRepository.decrement({ id: followeeId }, 'followers_count', 1);
 
     return { message: 'User unfollowed successfully' };
   }
 
   async getFollowers(userId: string, pagination: PaginationDto): Promise<PaginatedResult<User>> {
-    const user = await this.getUserById(userId);
-    const followerIds = user.followers || [];
-
-    if (followerIds.length === 0) {
-      return {
-        data: [],
-        total: 0,
-        page: pagination.page,
-        limit: pagination.limit,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPrevPage: false,
-      };
-    }
-
     const { page, limit } = pagination;
     const skip = (page - 1) * limit;
 
-    const [followers, total] = await this.userRepository.findAndCount({
-      where: { id: In(followerIds) },
-      select: ['id', 'first_name', 'last_name', 'username', 'profile_picture', 'is_verified'],
+    const [follows, total] = await this.userFollowRepository.findAndCount({
+      where: { followee_id: userId },
+      relations: ['follower'],
       skip,
       take: limit,
+      order: { created_at: 'DESC' },
     });
+
+    const followers = follows.map(follow => follow.follower);
 
     return {
       data: followers,
@@ -194,30 +182,18 @@ export class UserService {
   }
 
   async getFollowing(userId: string, pagination: PaginationDto): Promise<PaginatedResult<User>> {
-    const user = await this.getUserById(userId);
-    const followingIds = user.followings || [];
-
-    if (followingIds.length === 0) {
-      return {
-        data: [],
-        total: 0,
-        page: pagination.page,
-        limit: pagination.limit,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPrevPage: false,
-      };
-    }
-
     const { page, limit } = pagination;
     const skip = (page - 1) * limit;
 
-    const [following, total] = await this.userRepository.findAndCount({
-      where: { id: In(followingIds) },
-      select: ['id', 'first_name', 'last_name', 'username', 'profile_picture', 'is_verified'],
+    const [follows, total] = await this.userFollowRepository.findAndCount({
+      where: { follower_id: userId },
+      relations: ['followee'],
       skip,
       take: limit,
+      order: { created_at: 'DESC' },
     });
+
+    const following = follows.map(follow => follow.followee);
 
     return {
       data: following,

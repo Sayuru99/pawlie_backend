@@ -6,12 +6,14 @@ import { Like } from './entities/like.entity';
 import { PostModule } from '../post/post.module';
 import { Post } from '../post/entities/post.entity';
 import { NotificationModule } from '../notification/notification.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Like, Post]),
     PostModule,
     NotificationModule,
+    AnalyticsModule,
   ],
   controllers: [LikeController],
   providers: [LikeService],

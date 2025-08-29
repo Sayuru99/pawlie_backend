@@ -164,70 +164,101 @@ GOOGLE_CLOUD_PROJECT_ID=your_project_id
 GOOGLE_APPLICATION_CREDENTIALS=./google-credentials.json
 ```
 
+## 🐳 CI/CD with GitHub Actions
+
+This project is configured with a Continuous Integration and Continuous Deployment (CI/CD) pipeline using GitHub Actions.
+
+### Continuous Integration (CI)
+
+The CI pipeline is defined in `.github/workflows/ci.yml`. It automatically triggers on every push or pull request to the `main` branch and performs the following actions:
+1.  **Installs Dependencies**: Sets up the Node.js environment and installs all required packages using `npm ci`.
+2.  **Lints Code**: Checks the code for style and formatting issues using ESLint.
+3.  **Runs Tests**: Executes the entire test suite with `npm test`.
+4.  **Builds & Pushes Docker Image**: If all previous steps pass, it builds a Docker image of the application and pushes it to the GitHub Container Registry (`ghcr.io`).
+
+This process ensures that code merged into the main branch is always tested and ready for deployment.
+
+### Continuous Deployment (CD) on Oracle VM
+
+Deployment to your Oracle Cloud VM is semi-automated using a deployment script.
+
+#### 1. One-Time Server Setup
+
+First, you need to set up your Oracle VM instance.
+
+1.  **Connect to your VM:**
+    ```bash
+    ssh -i /path/to/your/oci_key user@<your-vm-ip>
+    ```
+
+2.  **Install Docker and Docker Compose:**
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y docker.io docker-compose
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    sudo usermod -aG docker $USER
+    # Log out and log back in for the group changes to take effect
+    ```
+
+3.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/your-github-username/your-repo-name.git
+    cd your-repo-name
+    ```
+
+4.  **Log in to GitHub Container Registry:**
+    You need a GitHub Personal Access Token (PAT) with `read:packages` scope.
+    ```bash
+    export CR_PAT=YOUR_GITHUB_PAT
+    echo $CR_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+    ```
+    This command securely logs you in without saving the PAT in your shell history.
+
+5.  **Create Environment File:**
+    Create a `.env` file in the root of the cloned repository and fill it with your production environment variables (database credentials, JWT secrets, etc.). Refer to the `.env.example` file for the required variables.
+    ```bash
+    cp .env.example .env
+    nano .env # Or your favorite editor
+    ```
+
+#### 2. Deploying the Application
+
+Whenever you want to deploy the latest version of the application from the `main` branch, simply run the deployment script:
+
+```bash
+bash deploy.sh
+```
+
+The script will:
+1.  Pull the latest Docker image from GitHub Container Registry.
+2.  Stop and remove the currently running application container.
+3.  Start a new container with the updated image.
+
+For fully automated deployment, you can set up a cron job to run the `deploy.sh` script at regular intervals.
+
 ## 🌐 Oracle Cloud Free Tier Deployment
+
+The section above describes the recommended CI/CD deployment method. The following notes are for setting up the surrounding infrastructure on Oracle Cloud.
 
 ### Infrastructure Setup
 
-1. **Create Oracle Cloud Account**
-   - Sign up at https://cloud.oracle.com
-   - Navigate to the Free Tier resources
+1.  **Create Oracle Cloud Account**
+    -   Sign up at https://cloud.oracle.com
+    -   Navigate to the Free Tier resources
 
-2. **Provision Resources**
-   ```bash
-   # Virtual Machine (2 ARM instances, 4 OCPUs, 24GB RAM)
-   # Autonomous Database (PostgreSQL, 20GB)
-   # Object Storage (10GB)
-   # Oracle Functions for serverless tasks
-   ```
+2.  **Provision Resources**
+    -   **Virtual Machine**: The free tier offers generous Ampere A1 Compute instances (ARM) which are perfect for running this application.
+    -   **Autonomous Database**: You can use a free tier PostgreSQL or bring your own. Ensure it's accessible from your VM.
+    -   **Object Storage**: Used for media uploads, as configured in your `.env` file.
 
-3. **VM Setup**
-   ```bash
-   # Connect to your Oracle Cloud VM
-   ssh -i ~/.ssh/oci_key ubuntu@<instance-ip>
-   
-   # Install Node.js
-   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-   sudo apt-get install -y nodejs
-   
-   # Install Docker
-   sudo apt-get update
-   sudo apt-get install docker.io docker-compose -y
-   sudo systemctl enable docker
-   sudo usermod -aG docker $USER
-   
-   # Install PM2 for process management
-   npm install -g pm2
-   ```
+3.  **Database Setup**
+    -   Ensure your VM can connect to your database instance. You might need to configure VCN security lists or network security groups.
+    -   Database migrations are handled by the application on startup if configured to do so, or you can run them manually inside the container.
 
-4. **Application Deployment**
-   ```bash
-   # Clone and setup the application
-   git clone https://github.com/your-org/pawlie-backend.git
-   cd pawlie-backend
-   
-   # Install dependencies
-   npm ci --production
-   
-   # Build the application
-   npm run build
-   
-   # Start with PM2
-   pm2 start ecosystem.config.js
-   pm2 startup
-   pm2 save
-   ```
-
-5. **Database Setup**
-   ```bash
-   # Connect to Autonomous Database
-   # Run migrations
-   npm run migration:run
-   ```
-
-6. **Load Balancer & SSL**
-   - Configure Oracle Cloud Load Balancer
-   - Set up SSL certificates
-   - Point domain to load balancer
+4.  **Load Balancer & SSL**
+    -   Configure an Oracle Cloud Load Balancer to point to your VM's IP address on port 3000.
+    -   Set up SSL certificates for your domain.
 
 ### Cloudflare Integration
 
