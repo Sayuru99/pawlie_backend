@@ -2,7 +2,11 @@
 set -e
 
 # Configuration
-IMAGE_NAME="ghcr.io/your-github-username/your-repo-name:latest" # <-- IMPORTANT: Replace with your GitHub username and repo name
+if [ -z "$1" ]; then
+    echo "Error: GitHub repository name not provided."
+    exit 1
+fi
+IMAGE_NAME="ghcr.io/$1:latest"
 CONTAINER_NAME="pawlie-backend"
 NETWORK_NAME="pawlie-network"
 
