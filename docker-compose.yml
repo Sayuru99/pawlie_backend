@@ -26,7 +26,7 @@ services:
       - '6379:6379'
     volumes:
       - redis_data:/data
-    command: redis-server --requirepass yourstrongpassword  # Add password
+    command: redis-server --requirepass Sahani@#032217
     networks:
       - pawlie-network
 
