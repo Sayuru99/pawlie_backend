@@ -35,12 +35,12 @@ COPY --chown=nestjs:nodejs package*.json ./
 # Switch to non-root user
 USER nestjs
 
-# Expose port
-EXPOSE 3000
+# Expose port (match internal app port if different from 5000)
+EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node dist/health-check.js
+  CMD node dist/health-check.js || exit 1
 
 # Start the application
 ENTRYPOINT ["dumb-init", "--"]
