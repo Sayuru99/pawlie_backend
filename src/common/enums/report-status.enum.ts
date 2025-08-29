@@ -3,4 +3,5 @@ export enum ReportStatus {
   REVIEWED = 'reviewed',
   RESOLVED = 'resolved',
   DISMISSED = 'dismissed',
+  ACTION_TAKEN = 'action_taken',
 }

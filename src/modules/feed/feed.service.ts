@@ -32,7 +32,7 @@ export class FeedService {
       select: ['followings'],
     });
 
-    const followingIds = user?.followings || [];
+    const followingIds = user?.followings?.map(f => f.followee_id) || [];
     const userIds = [userId, ...followingIds];
 
     // 1. Get recent posts from followed users and own posts (unsorted)

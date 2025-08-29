@@ -50,7 +50,7 @@ export class ExploreService {
       recommended_users: recommendedUsers,
     };
 
-    await this.cacheManager.set(cacheKey, content, 600); // 10 minutes
+    // await this.cacheManager.set(cacheKey, content, 600); // 10 minutes
     return content;
   }
 

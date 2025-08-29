@@ -82,7 +82,7 @@ export class UserController {
     @Body('userId') userId: string,
   ): Promise<{ following: boolean; message: string }> {
     const user = await this.userService.getUserById(userId);
-    const isFollowing = currentUser.followings?.includes(userId) || false;
+    const isFollowing = currentUser.followings?.some(f => f.followee_id === userId) || false;
     
     if (isFollowing) {
       const result = await this.userService.unfollowUser(currentUser.id, userId);

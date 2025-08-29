@@ -221,7 +221,7 @@ async validateUser(email: string, password: string): Promise<any> {
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-    await this.userRepository.update(user.id, {
+    await this.userRepository.update(userToUpdate.id, {
       password: hashedPassword,
       reset_token: null,
       reset_token_expires: null,
