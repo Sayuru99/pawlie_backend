@@ -56,13 +56,6 @@ jobs:
             # Create .env file
             echo "${{ secrets.ENV_FILE }}" > .env
 
-            # Create and unzip the Oracle Wallet
-            echo "Creating Oracle Wallet..."
-            sudo apt-get update && sudo apt-get install -y unzip || true
-            echo "${{ secrets.ORACLE_WALLET_B64 }}" | base64 -d > wallet.zip
-            mkdir -p wallet
-            unzip -o wallet.zip -d ./wallet
-
             # Login to GitHub Container Registry
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
@@ -83,16 +76,14 @@ jobs:
                 docker network create $NETWORK_NAME
             fi
 
-            # Run the new container with wallet
-            echo "Running new container with Oracle Wallet..."
+            # Run the new container
+            echo "Running new container..."
             docker run -d \
                 --name $CONTAINER_NAME \
                 --network $NETWORK_NAME \
                 --restart always \
                 -p 3000:3000 \
                 --env-file .env \
-                -e TNS_ADMIN=/usr/src/app/wallet \
-                -v $(pwd)/wallet:/usr/src/app/wallet \
                 $IMAGE_NAME
 
             echo "Deployment finished successfully!"
