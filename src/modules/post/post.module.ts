@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PostController } from './post.controller';
 import { PostService } from './post.service';
@@ -12,7 +12,7 @@ import { PostHashtag } from './entities/post-hashtag.entity';
   imports: [
     TypeOrmModule.forFeature([Post, PostHashtag]),
     StorageModule,
-    AnalyticsModule,
+    forwardRef(() => AnalyticsModule),
     HashtagModule,
   ],
   controllers: [PostController],
