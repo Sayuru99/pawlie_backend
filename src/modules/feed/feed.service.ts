@@ -128,7 +128,7 @@ export class FeedService {
       .where('post.is_sponsored = :isSponsored', { isSponsored: true })
       .andWhere('post.sponsorship_end_date > :now', { now: new Date() })
       .andWhere('post.user_id NOT IN (:...excludeUserIds)', { excludeUserIds })
-      .orderBy('RANDOM()') // Note: RANDOM() can be slow on large datasets. Use with caution.
+      .orderBy('dbms_random.value') // Note: Oracle-specific random ordering.
       .getOne();
   }
 
