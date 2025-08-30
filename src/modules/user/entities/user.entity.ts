@@ -93,7 +93,7 @@ export class User {
   website?: string;
 
   @ApiProperty({ description: 'User location coordinates', required: false })
-  @Column({ type: 'geography', spatialFeatureType: 'Point', srid: 4326, nullable: true })
+  @Column({ type: 'sdo_geometry', srid: 4326, nullable: true })
   location?: any;
 
   @ApiProperty({ description: 'User type', enum: UserType })
@@ -101,7 +101,7 @@ export class User {
   user_type: UserType;
 
   @ApiProperty({ description: 'Business details for professional users', required: false })
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'json', nullable: true })
   business_details?: {
     name?: string;
     services?: string[];
@@ -121,7 +121,7 @@ export class User {
   verification_expires_at?: Date;
 
   @ApiProperty({ description: 'User preferences', required: false })
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'json', nullable: true })
   preferences?: {
     preferred_breeds?: string[];
     services?: string[];
@@ -130,7 +130,7 @@ export class User {
 
   @ApiProperty({ description: 'Notification preferences' })
   @Column({
-    type: 'jsonb',
+    type: 'json',
     default: {
       follow: true,
       like: true,
@@ -162,11 +162,11 @@ export class User {
   followings: UserFollow[];
 
   @ApiProperty({ description: 'List of blocked user IDs' })
-  @Column({ type: 'uuid', array: true, default: [] })
+  @Column({ type: 'json', default: '[]' })
   blocked_users: string[];
 
   @ApiProperty({ description: 'List of restricted user IDs' })
-  @Column({ type: 'uuid', array: true, default: [] })
+  @Column({ type: 'json', default: '[]' })
   restricted_users: string[];
 
   @ApiProperty({ description: 'Profile visibility', enum: Visibility })

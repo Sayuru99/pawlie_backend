@@ -20,12 +20,10 @@ import { Comment } from '../modules/comment/entities/comment.entity';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DATABASE_HOST'),
-        port: configService.get('DATABASE_PORT'),
-        username: configService.get('DATABASE_USERNAME'),
-        password: configService.get('DATABASE_PASSWORD'),
-        database: configService.get('DATABASE_NAME'),
+        type: 'oracle',
+        username: configService.get<string>('ORACLE_USER'),
+        password: configService.get<string>('ORACLE_PASSWORD'),
+        connectString: configService.get<string>('ORACLE_CONNECT_STRING'),
         entities: [
           User,
           Pet,
@@ -43,7 +41,6 @@ import { Comment } from '../modules/comment/entities/comment.entity';
         ],
         synchronize: configService.get('NODE_ENV') === 'development',
         logging: configService.get('NODE_ENV') === 'development',
-        ssl: configService.get('NODE_ENV') === 'production',
       }),
       inject: [ConfigService],
     }),
