@@ -93,7 +93,7 @@ export class User {
   website?: string;
 
   @ApiProperty({ description: 'User location coordinates', required: false })
-  @Column({ type: 'sdo_geometry', srid: 4326, nullable: true })
+  @Column({ type: 'json', nullable: true })
   location?: any;
 
   @ApiProperty({ description: 'User type', enum: UserType })
