@@ -48,6 +48,42 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           port: ${{ secrets.VM_PORT }}
           script: |
+            # Set variables
+            IMAGE_NAME="ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]'):latest"
+            CONTAINER_NAME="pawlie-backend"
+            NETWORK_NAME="pawlie-network"
+
+            # Create .env file
             echo "${{ secrets.ENV_FILE }}" > .env
-            chmod +x ./deploy.sh
-            ./deploy.sh ${{ github.repository }}
+
+            # Login to GitHub Container Registry
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+            # Pull the latest image
+            echo "Pulling latest Docker image..."
+            docker pull $IMAGE_NAME
+
+            # Stop and remove the old container if it exists
+            if [ $(docker ps -a -q -f name=^/${CONTAINER_NAME}$) ]; then
+                echo "Stopping and removing old container..."
+                docker stop $CONTAINER_NAME
+                docker rm $CONTAINER_NAME
+            fi
+
+            # Create network if it doesn't exist
+            if ! docker network ls | grep -q $NETWORK_NAME; then
+                echo "Creating Docker network: $NETWORK_NAME"
+                docker network create $NETWORK_NAME
+            fi
+
+            # Run the new container
+            echo "Running new container..."
+            docker run -d \
+                --name $CONTAINER_NAME \
+                --network $NETWORK_NAME \
+                --restart always \
+                -p 3000:3000 \
+                --env-file .env \
+                $IMAGE_NAME
+
+            echo "Deployment finished successfully!"
