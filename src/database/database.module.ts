@@ -14,6 +14,7 @@ import { Admin } from '../modules/admin/entities/admin.entity';
 import { Payment } from '../modules/payment/entities/payment.entity';
 import { Like } from '../modules/like/entities/like.entity';
 import { Comment } from '../modules/comment/entities/comment.entity';
+import { PostHashtag } from '../modules/post/entities/post-hashtag.entity';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { Comment } from '../modules/comment/entities/comment.entity';
           Payment,
           Like,
           Comment,
+          PostHashtag,
         ],
         synchronize: configService.get('NODE_ENV') === 'development',
         logging: configService.get('NODE_ENV') === 'development',
