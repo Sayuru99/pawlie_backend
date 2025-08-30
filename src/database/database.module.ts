@@ -24,7 +24,9 @@ import { PostHashtag } from '../modules/post/entities/post-hashtag.entity';
         type: 'oracle',
         username: configService.get<string>('ORACLE_USER'),
         password: configService.get<string>('ORACLE_PASSWORD'),
-        connectString: configService.get<string>('ORACLE_CONNECT_ALIAS'),
+        host: configService.get<string>('ORACLE_HOST'),
+        port: configService.get<number>('ORACLE_PORT'),
+        serviceName: configService.get<string>('ORACLE_SERVICE_NAME'),
         entities: [
           User,
           Pet,
